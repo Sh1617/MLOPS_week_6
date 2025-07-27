@@ -1,0 +1,38 @@
+name: Deployment to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # ✅ Use the correct authentication method
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    # ✅ Set up gcloud CLI (after auth)
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        install_components: 'gke-gcloud-auth-plugin'
+
+    # ✅ Get cluster credentials
+    - name: Get GKE credentials
+      run: |
+        gcloud container clusters get-credentials demo-gke-iris-cluster --region us-central1
+
+    # ✅ Deploy to GKE using kubectl
+    - name: Deploy to GKE
+      run: |
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
